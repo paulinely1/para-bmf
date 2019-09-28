@@ -37,12 +37,25 @@ module.exports = {
 	async coletar(req, res){
 		try {
 
+			// verifica se e' vazio
 			if (req.body.dia == null || req.body.dia == '') {
 				return res.status(400).json({
 					msg: 'informar dia'
 				});
 			}
 
+			//verifica se dia ja' existe
+			const diaExiste = await Ptax.find({
+				dia: req.body.dia
+			});
+
+			if (diaExiste.length > 0) {
+				return res.status(400).json({
+					msg: 'dia ja existe'
+				});
+			}
+
+			//request bacen api
 			const urlBacen = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='USD'&@dataCotacao='${req.body.dia}'&$top=100&$format=json&$select=cotacaoVenda,dataHoraCotacao,tipoBoletim`;
 			const dadosBacen = await axios.get(urlBacen);
 			// const dadosBacen = await fetch(urlBacen);
@@ -87,13 +100,41 @@ module.exports = {
 	},
 	async medias(req, res){
 		try {
-			const ptax = await Ptax.find().sort({
+			const ptax = await Ptax.find({
+				dia: {
+					$gt: req.params.data, $lt: Date.now()
+				}
+			}).sort({
 
 				//ordena desc pela parametro 'dia'
 				dia: -1
-			}).limit(parseInt(req.params.quantidadeDias));
+			});
 
-			return res.json(ptax);
+			let tempMediaVlt = 0;
+			let tempMaiorVlt = 0.0;
+			let tempMenorVlt = 99999.9;
+
+			ptax.forEach(val => {
+				tempMediaVlt += val.volatilidade
+				if (val.volatilidade >= tempMaiorVlt) {tempMaiorVlt = val.volatilidade}
+				if (val.volatilidade <= tempMenorVlt) {tempMenorVlt = val.volatilidade}
+			});
+			tempMediaVlt /= ptax.length;
+
+			let desvioPadraoTemp = 0;
+			ptax.forEach(val => {
+				desvioPadraoTemp += Math.pow(val.volatilidade-tempMediaVlt, 2);
+			});
+
+			const dados = {
+				quantidade: ptax.length,
+				mediaVolatilidade: tempMediaVlt,
+				desvioPadraoVolatilidade: Math.sqrt(desvioPadraoTemp),
+				maiorVolatilidade: tempMaiorVlt,
+				menorVolatilidade: tempMenorVlt
+			}
+
+			return res.json(dados);
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
