@@ -2,7 +2,7 @@ const axios = require('axios');
 const qs = require('querystring');
 
 module.exports = {
-	async show(req, res){
+	async getAjusteDol(req, res){
 		try {
 
 			const dia = `${req.params.data[0]}${req.params.data[1]}/${req.params.data[2]}${req.params.data[3]}/${req.params.data[4]}${req.params.data[5]}${req.params.data[6]}${req.params.data[7]}`;
@@ -12,6 +12,15 @@ module.exports = {
 			}
 
 			const requestAjusteBmf = await axios.post(url, qs.stringify(dados));
+
+			// verifica se e' um dia valido
+			const eDiaValido = requestAjusteBmf.data.indexOf('dados para a data consultada');
+			if (eDiaValido != -1) {
+				// console.log(eDiaValido);
+				return res.status(400).json({
+					msg: 'dia nao invalido'
+				});
+			}
 			
 			// extrai apenas valor do ajuste atual
 			var ajuste = "";
@@ -22,7 +31,8 @@ module.exports = {
 				ajuste += requestAjusteBmf.data[i];
 			}
 
-			res.send(ajuste);
+			res.json({ajusteDol: ajuste});
+			// res.send(requestAjusteBmf.data);
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
