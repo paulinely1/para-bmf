@@ -72,8 +72,8 @@ module.exports = {
 			var menor = 99999.9;
 
 			for (let i = 0; i < 4; i++) {
-				if (dadosBacen.data.value[i].cotacaoVenda > maior) { maior = dadosBacen.data.value[i].cotacaoVenda}
-				if (dadosBacen.data.value[i].cotacaoVenda < menor) { menor = dadosBacen.data.value[i].cotacaoVenda}
+				if (dadosBacen.data.value[i].cotacaoVenda > maior) maior = dadosBacen.data.value[i].cotacaoVenda
+				if (dadosBacen.data.value[i].cotacaoVenda < menor) menor = dadosBacen.data.value[i].cotacaoVenda
 			}
 
 			let novaPtax = await Ptax.create({
@@ -104,36 +104,36 @@ module.exports = {
 					$gt: req.params.data, $lt: Date.now()
 				}
 			}).sort({
-
-				//ordena desc pela parametro 'dia'
 				dia: -1
 			});
 
-			let tempMediaVlt = 0.0;
-			let tempMaiorVlt = 0.0;
-			let tempMenorVlt = 99999.9;
+			let tempMaiorVlt = 0.0
+			let tempMenorVlt = 99999.9
+			let vlts = []
 
 			// media
-			ptax.forEach(val => {
-				tempMediaVlt += val.volatilidade
-				if (val.volatilidade >= tempMaiorVlt) {tempMaiorVlt = val.volatilidade}
-				if (val.volatilidade <= tempMenorVlt) {tempMenorVlt = val.volatilidade}
-			});
-			tempMediaVlt /= ptax.length;
+			let tempMediaVlt = ptax.reduce((total, num) => {
+				vlts.push(num.volatilidade)
+				if (num.volatilidade >= tempMaiorVlt) tempMaiorVlt = num.volatilidade
+				if (num.volatilidade <= tempMenorVlt) tempMenorVlt = num.volatilidade
+				return total + num.volatilidade
+			}, 0)
+			tempMediaVlt /= ptax.length
 
 			// desvio padrao
-			let desvioPadraoTemp = 0;
-			ptax.forEach(val => {
-				desvioPadraoTemp += Math.pow(val.volatilidade-tempMediaVlt, 2);
-			});
-			desvioPadraoTemp = Math.sqrt(desvioPadraoTemp);
-
+			let desvioPadraoTemp = ptax.reduce((total, num) => {
+				return total + Math.pow(num.volatilidade - tempMediaVlt, 2)
+			}, 0)
+			desvioPadraoTemp /= ptax.length
+			desvioPadraoTemp = Math.sqrt(desvioPadraoTemp)
+			
 			let dados = {
-				quantidade: ptax.length,
-				mediaVolatilidade: tempMediaVlt,
-				desvioPadraoVolatilidade: desvioPadraoTemp,
-				maiorVolatilidade: tempMaiorVlt,
-				menorVolatilidade: tempMenorVlt
+				days: ptax.length,
+				avg_vol: tempMediaVlt,
+				stdev_vol: desvioPadraoTemp,
+				max_vol: tempMaiorVlt,
+				min_vol: tempMenorVlt,
+				vols: vlts 
 			}
 
 			return res.json(dados);
