@@ -17,6 +17,8 @@ router.post(`/${PrefixoDolar}/ptax`, PtaxController.coletar);
 router.get(`/${PrefixoDolar}/ptax/medias/:data`, PtaxController.medias);
 
 // rotas para ajustes
-router.get(`/${PrefixoDolar}/ajusteDol/:data`, AjusteController.getAjusteDol);
+router.get(`/${PrefixoDolar}/ajuste`, AjusteController.index);
+router.get(`/${PrefixoDolar}/ajuste/:data`, AjusteController.show);
+router.post(`/${PrefixoDolar}/ajuste`, AjusteController.coletar);
 
 module.exports = router;
