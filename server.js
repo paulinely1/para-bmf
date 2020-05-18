@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
 });
 
 //rotas
-app.use('/api', require('./src/routes'));
+app.use('/v1', require('./src/routes'));
 
 //porta
 app.listen(8000, () => {

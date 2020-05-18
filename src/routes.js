@@ -5,17 +5,18 @@ const PtaxController = require('./controllers/PtaxController');
 const AjusteController = require('./controllers/AjusteController');
 
 router.get('/', (req, res) => {
-	res.send('dados ptax: /ptax/MM-DD-AAAA<br>dados ajuste: /ajusteDolar/DDMMAAAA');
+	res.send('dados ptax: /DOL/ptax/MM-DD-AAAA ou AA <br>dados ajuste: /DOL/ajusteDolar/MM-DD-AAAA');
 });
 
+const PrefixoDolar = "DOL"
 
 // rotas para ptax
-router.get('/ptax', PtaxController.index);
-router.get('/ptax/:dia', PtaxController.show);
-router.post('/ptax', PtaxController.coletar);
-router.get('/ptax/medias/:data', PtaxController.medias);
+router.get(`/${PrefixoDolar}/ptax`, PtaxController.index);
+router.get(`/${PrefixoDolar}/ptax/:data`, PtaxController.show);
+router.post(`/${PrefixoDolar}/ptax`, PtaxController.coletar);
+router.get(`/${PrefixoDolar}/ptax/medias/:data`, PtaxController.medias);
 
 // rotas para ajustes
-router.get('/ajusteDol/:data', AjusteController.getAjusteDol);
+router.get(`/${PrefixoDolar}/ajusteDol/:data`, AjusteController.getAjusteDol);
 
 module.exports = router;
