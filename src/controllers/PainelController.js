@@ -7,22 +7,22 @@ module.exports = {
 		try {
 
 			const dolFut = await Dolfut.findOne().sort({
-				dia: -1
+				data: -1
 			})
-			
+
 			//verifica se dia ja' existe
-			const diaExiste = await PontosDolfut.findOne({
+			const diaExiste = await PontosDolfut.find({
 				data_base: dolFut.data
 			})
 
 			if (diaExiste.length > 0) {
-				return res.json(diaExiste)
+				return res.json({"DOLFUT-1": dolFut, "PONTOS-1": diaExiste[0]})
 			}
 
 			const quantidadePontos = 4 // qnt de pontos para cima e para baixo
 			const incrementoFechamento = 0.005 // 0,5%
 			const incrementoAjuste = 0.005 // 0,5%
-			const incrementoVwap = 0.005 // 0,5%
+			const incrementoVwap = 0.0035 // 0,35%
 			let pontosFechamento = []
 			let pontosAjuste = []
 			let pontosVwap = []
@@ -74,7 +74,9 @@ module.exports = {
 				escada: escadaPontos
 			}
 
-			return res.json(await PontosDolfut.create(pontos))
+			const novosPontos = await PontosDolfut.create(pontos)
+			
+			return res.json({dolFut, novosPontos})
 
 		} catch(err) {
 			return res.status(400).json({

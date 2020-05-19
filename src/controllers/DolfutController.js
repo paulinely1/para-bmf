@@ -44,6 +44,13 @@ module.exports = {
 	async create(req, res){
 		try {
 
+			// sao pelos menos 7 campos
+			if (Object.keys(req.body).length < 7){
+				return res.status(400).json({
+					msg: 'preencha todos os campos'
+				})
+			}
+
 			const data = new Date(req.body.data)
 
 			//verifica se dia ja' existe
