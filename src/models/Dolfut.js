@@ -9,6 +9,7 @@ const DolfutSchema = new mongoose.Schema({
 	contrato: {
 		type: String,
 		required: true
+		
 	},
 	
 	abertura: {
