@@ -4,7 +4,13 @@ const PtaxSchema = new mongoose.Schema({
 	dia: {
 		type: Date,
 		required: true
-	}, previas: {
+	},
+	ptax: {
+		type: Number,
+		required: true
+
+	},
+	previas: {
 		p1: {
 			type: Number,
 			required: true
@@ -24,11 +30,6 @@ const PtaxSchema = new mongoose.Schema({
 			type: Number,
 			required: true
 		}	
-
-	},
-	ptax: {
-		type: Number,
-		required: true
 
 	},
 	volatilidade: {

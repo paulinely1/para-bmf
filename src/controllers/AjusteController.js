@@ -1,38 +1,45 @@
-const mongoose = require('mongoose');
-const axios = require('axios');
-const qs = require('querystring');
+const mongoose = require('mongoose')
+const axios = require('axios')
+const qs = require('querystring')
 
-const Ajuste = mongoose.model('Ajuste');
+const Ajuste = mongoose.model('Ajuste')
 
 module.exports = {
 	async index(req, res){
 		try {
 			let ajuste = await Ajuste.find().sort({
 				dia: -1
-			});
+			})
 
-			return res.json(ajuste);
+			return res.json(ajuste)
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
-			});
+			})
 		}
 	},
 	async show(req, res){
 		try {
 
+			// verifica se e' vazio
+			if (req.params.data == null || req.params.data == '') {
+				return res.status(400).json({
+					msg: 'informar data'
+				})
+			}
+
 			const dataSolicitada = new Date(req.params.data)
 
 			let ajuste = await Ajuste.find({
 				dia: dataSolicitada
-			});
+			})
 
-			ajuste.length > 0 ? res.json(ajuste) : res.status(400).json({msg: "dia inexistente"});
+			ajuste.length > 0 ? res.json(ajuste) : res.status(400).json({msg: "dia inexistente"})
 			
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
-			});
+			})
 		}
 	},
 	async coletar(req, res){
@@ -42,19 +49,19 @@ module.exports = {
 			if (req.body.data == null || req.body.data == '') {
 				return res.status(400).json({
 					msg: 'informar data'
-				});
+				})
 			}
 			const dataSolicitada = new Date(req.body.data)
 
 			//verifica se dia ja' existe
 			const diaExiste = await Ajuste.find({
 				dia: dataSolicitada
-			});
+			})
 
 			if (diaExiste.length > 0) {
 				return res.status(400).json({
 					msg: 'data ja existe'
-				});
+				})
 			}
 			
 			let mes = `${dataSolicitada.getMonth() + 1}`
@@ -68,23 +75,23 @@ module.exports = {
 				dData1: dataParaBmf
 			}
 
-			const requestAjusteBmf = await axios.post(url, qs.stringify(dados));
+			const requestAjusteBmf = await axios.post(url, qs.stringify(dados))
 
 			// verifica se e' um dia valido
-			const eDiaValido = requestAjusteBmf.data.indexOf('dados para a data consultada');
+			const eDiaValido = requestAjusteBmf.data.indexOf('dados para a data consultada')
 			if (eDiaValido != -1) {
 				return res.status(400).json({
 					msg: 'dia nao invalido'
-				});
+				})
 			}
 			
 			// extrai apenas valor do ajuste atual
-			let ajusteFinal = "";
-			const inicio = requestAjusteBmf.data.indexOf('DOL ')+178;
+			let ajusteFinal = ""
+			const inicio = requestAjusteBmf.data.indexOf('DOL ') + 178
 			const fim = inicio+10
 
 			for (let i = inicio; i < fim; i++) {
-				ajusteFinal += requestAjusteBmf.data[i];
+				ajusteFinal += requestAjusteBmf.data[i]
 			}
 
 			//converte para float

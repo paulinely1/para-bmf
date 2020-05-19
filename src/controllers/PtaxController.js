@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-// const fetch = require("node-fetch");
 const axios = require('axios');
 
 const Ptax = mongoose.model('Ptax');
@@ -9,30 +8,37 @@ module.exports = {
 		try {
 			let ptax = await Ptax.find().sort({
 				dia: -1
-			});
+			})
 
 			return res.json(ptax);
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
-			});
+			})
 		}
 	},
 	async show(req, res){
 		try {
 
+			// verifica se e' vazio
+			if (req.params.data == null || req.params.data == '') {
+				return res.status(400).json({
+					msg: 'informar data'
+				})
+			}
+
 			const dataSolicitada = new Date(req.params.data)
 
 			let ptax = await Ptax.find({
 				dia: dataSolicitada
-			});
+			})
 
-			ptax.length > 0 ? res.json(ptax) : res.status(400).json({msg: "dia inexistente"});
+			ptax.length > 0 ? res.json(ptax) : res.status(400).json({msg: "dia inexistente"})
 			
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
-			});
+			})
 		}
 	},
 	//coleta o dia atraves da api do bc e salva no bd
@@ -43,7 +49,7 @@ module.exports = {
 			if (req.body.data == null || req.body.data == '') {
 				return res.status(400).json({
 					msg: 'informar data'
-				});
+				})
 			}
 
 			const dataParaBd = new Date(req.body.data)
@@ -51,33 +57,35 @@ module.exports = {
 			//verifica se dia ja' existe
 			const diaExiste = await Ptax.find({
 				dia: dataParaBd
-			});
+			})
 
 			if (diaExiste.length > 0) {
 				return res.status(400).json({
 					msg: 'data ja existe'
-				});
+				})
 			}
 
 			//request bacen api
 			let mes = `${dataParaBd.getMonth() + 1}`
 			let dia = `${dataParaBd.getDate()}`
+			
 			if (mes.length == 1) mes = `0${mes}`
 			if (dia.length == 1) dia = `0${dia}`
+
 			const dataParaBacen = `${mes}${dia}${dataParaBd.getFullYear()}`
-			const urlBacen = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='USD'&@dataCotacao='${dataParaBacen}'&$top=100&$format=json&$select=cotacaoVenda,dataHoraCotacao,tipoBoletim`;
-			const dadosBacen = await axios.get(urlBacen);
+			const urlBacen = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='USD'&@dataCotacao='${dataParaBacen}'&$top=100&$format=json&$select=cotacaoVenda,dataHoraCotacao,tipoBoletim`
+			const dadosBacen = await axios.get(urlBacen)
 
 			//caso seja fim de semana ou feriado
 			if (dadosBacen.data.value.length == 0) {
 				return res.status(400).json({
 					msg: 'dia nao valido'
-				});
+				})
 			}
 			
 			//definir maior e menor
 			let maior = 0.0
-			let menor = 99999.9;
+			let menor = 99999.9
 
 			for (let i = 0; i < 4; i++) {
 				if (dadosBacen.data.value[i].cotacaoVenda > maior) maior = dadosBacen.data.value[i].cotacaoVenda
@@ -95,25 +103,40 @@ module.exports = {
 				},
 				ptax: dadosBacen.data.value[4].cotacaoVenda,
 				volatilidade: (maior-menor)*1000
-			});
+			})
 
 			res.json(novaPtax);
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
-			});
+			})
 		}		
 
 	},
-	async medias(req, res){
+	async media(req, res){
 		try {
+
+			const diasSolicitados = isNaN(req.params.dias) ? 0 : parseInt(req.params.dias)
+
+			// verifica se e' vazio
+			if ( diasSolicitados < 1) {
+				return res.status(400).json({
+					msg: 'informar quantidade de dias'
+				});
+			}
+
+			const dataFinal = new Date(Date.now())
+			const dataInicial = new Date(Date.now())
+			
+			dataInicial.setDate(dataFinal.getDate() - diasSolicitados)
+
 			let ptax = await Ptax.find({
 				dia: {
-					$gt: new Date(req.params.data), $lt: Date.now()
+					$gt: dataInicial, $lt: dataFinal
 				}
 			}).sort({
 				dia: -1
-			});
+			})
 
 			let tempMaiorVlt = 0.0
 			let tempMenorVlt = 99999.9
@@ -121,7 +144,7 @@ module.exports = {
 
 			// media
 			let tempMediaVlt = ptax.reduce((total, num) => {
-				vlts.push(num.volatilidade)
+				vlts.push([num.dia ,num.volatilidade])
 				if (num.volatilidade >= tempMaiorVlt) tempMaiorVlt = num.volatilidade
 				if (num.volatilidade <= tempMenorVlt) tempMenorVlt = num.volatilidade
 				return total + num.volatilidade
@@ -132,23 +155,22 @@ module.exports = {
 			let desvioPadraoTemp = ptax.reduce((total, num) => {
 				return total + Math.pow(num.volatilidade - tempMediaVlt, 2)
 			}, 0)
-			desvioPadraoTemp /= ptax.length
-			desvioPadraoTemp = Math.sqrt(desvioPadraoTemp)
+			desvioPadraoTemp = Math.sqrt(desvioPadraoTemp/ptax.length)
 			
 			let dados = {
-				days: ptax.length,
-				avg_vol: tempMediaVlt,
-				stdev_vol: desvioPadraoTemp,
-				max_vol: tempMaiorVlt,
-				min_vol: tempMenorVlt,
-				vols: vlts 
+				days_found: ptax.length,
+				avg_vlts: tempMediaVlt,
+				stdev_vlts: desvioPadraoTemp,
+				max_vlt: tempMaiorVlt,
+				min_vlt: tempMenorVlt,
+				vlts 
 			}
 
 			return res.json(dados);
 		} catch(err) {
 			return res.status(400).json({
 				msg: err
-			});
+			})
 		}
 	},
 }
