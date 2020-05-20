@@ -16,7 +16,7 @@ module.exports = {
 			})
 
 			if (diaExiste.length > 0) {
-				return res.json({"DOLFUT-1": dolFut, "PONTOS-1": diaExiste[0]})
+				return res.json({"dolfut-1": dolFut, "pontos-1": diaExiste[0]})
 			}
 
 			const quantidadePontos = 4 // qnt de pontos para cima e para baixo
@@ -76,7 +76,7 @@ module.exports = {
 
 			const novosPontos = await PontosDolfut.create(pontos)
 			
-			return res.json({dolFut, novosPontos})
+			return res.json({"dolfut-1": dolFut, "pontos-1": novosPontos})
 
 		} catch(err) {
 			return res.status(400).json({
